@@ -1,4 +1,4 @@
-import { EventsModel, submitEvent, resolveEvent } from "@fileverse/api/base";
+import { EventsModel, submitEvent, resolveEvent, FilesModel } from "@fileverse/api/base";
 
 const MAX_SUBMIT_PER_TICK = 2;
 const MAX_RESOLVE_PER_TICK = 3;
@@ -8,9 +8,16 @@ export async function submitPendingEvents(): Promise<void> {
     const event = await EventsModel.findNextEligible([]);
     if (!event) break;
     try {
-      console.log(`[sync:submit] event ${event._id}, type: ${event.type}`);
+      // ✅ FIX: Correct localVersion before submitting so the contract
+      // receives onchainVersion+1 instead of the inflated localVersion
+      const file = await FilesModel.findById(event.fileId);
+      if (file && file.localVersion !== file.onchainVersion + 1) {
+        await FilesModel.update(event.fileId, {
+          localVersion: file.onchainVersion + 1
+        });
+        console.log(`[sync:submit] corrected version for ${event.fileId}: ${file.localVersion} → ${file.onchainVersion + 1}`);
+      }
       await submitEvent(event);
-      console.log(`[sync:submit] event ${event._id} submitted successfully`);
     } catch (error) {
       console.error(`[sync:submit] event ${event._id} failed:`, error);
     }

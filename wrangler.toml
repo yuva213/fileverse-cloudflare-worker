@@ -10,7 +10,7 @@ database_id = "4e6a0107-3701-485c-866d-a9a41f139a0d"
 migrations_dir = "migrations"
 
 [triggers]
-crons = ["*/2 * * * *", "*/1 * * * *"]
+crons = ["*/1 * * * *"]
 
 [[rules]]
 type = "Text"

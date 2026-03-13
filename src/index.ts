@@ -14,12 +14,10 @@ export default {
       await ensureInitialized(env);
 
       switch (event.cron) {
-        case "*/2 * * * *":
-          await submitPendingEvents();
-          break;
         case "*/1 * * * *":
-          await resolveSubmittedEvents();
-          break;
+  await submitPendingEvents();
+  await resolveSubmittedEvents();
+  break;
       }
     } catch (error) {
       console.error(`[scheduled] cron ${event.cron} failed:`, error);
