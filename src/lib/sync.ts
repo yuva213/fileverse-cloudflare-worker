@@ -1,40 +1,30 @@
-import { EventsModel, submitEvent, resolveEvent, FilesModel } from "@fileverse/api/base";
+import { app } from "./routes";
+import { ensureInitialized } from "./lib/init";
+import { submitPendingEvents, resolveSubmittedEvents } from "./lib/sync";
+import type { Env } from "./types";
 
-const MAX_SUBMIT_PER_TICK = 2;
-const MAX_RESOLVE_PER_TICK = 3;
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    await ensureInitialized(env);
+    return app.fetch(request, env, ctx);
+  },
 
-export async function submitPendingEvents(): Promise<void> {
-  for (let i = 0; i < MAX_SUBMIT_PER_TICK; i++) {
-    const event = await EventsModel.findNextEligible([]);
-    if (!event) break;
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     try {
-      // ✅ FIX: Correct localVersion before submitting so the contract
-      // receives onchainVersion+1 instead of the inflated localVersion
-      const file = await FilesModel.findById(event.fileId);
-      if (file && file.localVersion !== file.onchainVersion + 1) {
-        await FilesModel.update(event.fileId, {
-          localVersion: file.onchainVersion + 1
-        });
-        console.log(`[sync:submit] corrected version for ${event.fileId}: ${file.localVersion} → ${file.onchainVersion + 1}`);
+      await ensureInitialized(env);
+
+      // BUG FIX: Previously split across two crons ("*/2" and "*/1").
+      // Cloudflare Workers free plan only reliably fires one cron trigger.
+      // Now both submit + resolve run every minute under a single cron.
+      switch (event.cron) {
+        case "*/1 * * * *":
+          await submitPendingEvents();
+          await resolveSubmittedEvents();
+          break;
       }
-      await submitEvent(event);
     } catch (error) {
-      console.error(`[sync:submit] event ${event._id} failed:`, error);
+      console.error(`[scheduled] cron ${event.cron} failed:`, error);
+      throw error;
     }
-  }
-}
-
-export async function resolveSubmittedEvents(): Promise<void> {
-
-  for (let i = 0; i < MAX_RESOLVE_PER_TICK; i++) {
-    const event = await EventsModel.findNextSubmitted([]);
-    if (!event) break;
-    try {
-      console.log(`[sync:resolve] event ${event._id}, type: ${event.type}`);
-      await resolveEvent(event);
-      console.log(`[sync:resolve] event ${event._id} resolved`);
-    } catch (error) {
-      console.error(`[sync:resolve] event ${event._id} failed:`, error);
-    }
-  }
-}
+  },
+};

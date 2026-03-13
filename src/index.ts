@@ -13,11 +13,14 @@ export default {
     try {
       await ensureInitialized(env);
 
+      // BUG FIX: Previously split across two crons ("*/2" and "*/1").
+      // Cloudflare Workers free plan only reliably fires one cron trigger.
+      // Now both submit + resolve run every minute under a single cron.
       switch (event.cron) {
         case "*/1 * * * *":
-  await submitPendingEvents();
-  await resolveSubmittedEvents();
-  break;
+          await submitPendingEvents();
+          await resolveSubmittedEvents();
+          break;
       }
     } catch (error) {
       console.error(`[scheduled] cron ${event.cron} failed:`, error);

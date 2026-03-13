@@ -10,6 +10,10 @@ database_id = "4e6a0107-3701-485c-866d-a9a41f139a0d"
 migrations_dir = "migrations"
 
 [triggers]
+# BUG FIX: Was ["*/2 * * * *", "*/1 * * * *"] — two crons.
+# The free plan only reliably fires one trigger. submitPendingEvents was
+# mapped to */2 which was silently dropped, so events never got submitted.
+# Now both submit + resolve run every minute under a single cron.
 crons = ["*/1 * * * *"]
 
 [[rules]]
