@@ -1,0 +1,28 @@
+{
+  "name": "fileverse-cloudflare-worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy"
+  },
+  "dependencies": {
+    "@fileverse/api": "^1.0.8",
+    "hono": "^4.7.0"
+  },
+  "cloudflare": {
+    "bindings": {
+      "API_KEY": {
+        "description": "Your Fileverse API key. Get one at https://docs.fileverse.io/?setting=dev-mode"
+      },
+      "RPC_URL": {
+        "description": "Optional: Custom Gnosis Chain RPC URL. Leave empty to use the default."
+      }
+    }
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "typescript": "^5.4.5",
+    "wrangler": "^4.65.0"
+  }
+}
