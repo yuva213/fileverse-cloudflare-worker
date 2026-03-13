@@ -13,12 +13,12 @@ export default {
     try {
       await ensureInitialized(env);
 
-      // BUG FIX: Previously split across two crons ("*/2" and "*/1").
-      // Cloudflare Workers free plan only reliably fires one cron trigger.
-      // Now both submit + resolve run every minute under a single cron.
+      // BUG FIX: Was split across two crons ("*/2" submit, "*/1" resolve).
+      // Free plan only fires one cron reliably — submit was silently dropped.
+      // Now both run every minute under a single cron.
       switch (event.cron) {
         case "*/1 * * * *":
-          await submitPendingEvents();
+          await submitPendingEvents(env.DB);  // pass DB so sync.ts can fix versions
           await resolveSubmittedEvents();
           break;
       }
