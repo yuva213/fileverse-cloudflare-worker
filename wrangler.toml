@@ -5,8 +5,8 @@ compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding = "DB"
-database_name = "fileverse-db"
-database_id = "4e6a0107-3701-485c-866d-a9a41f139a0d"
+database_name = "d1"
+database_id = "b017d227-cb99-4a49-af64-d1d20b5aaf7f"
 migrations_dir = "migrations"
 
 [triggers]
